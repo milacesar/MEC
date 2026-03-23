@@ -137,7 +137,7 @@ class EmissionResults(BaseModel):
     NEl: float
     NEp: float
     ME_maint: float
-    ME_lact: float
+    ME_lact: float = 0.0
     ME_preg: float
 
 
@@ -179,7 +179,7 @@ class AbstractCommonParams(BaseModel, ABC):
     """An Abstract class representing the common parameters between all input params, reducing code duplication."""
     num_animals: int = Field(ge=0)
     reporting_period: int = Field(365, gt=0)
-    diet_digestability_percentage: float = Field(nz_default['DE_NZ_Pasture'], gt=0, le=100.0)
+    diet_digestibility_percentage: float = Field(nz_default['DE_NZ_Pasture'], gt=0, le=100.0)
     methane_conversion_factor_percentage: float = Field(ipcc_default['Ym'], ge=0, le=100.0)
 
 # =============================================================================
@@ -206,14 +206,17 @@ def ask_and_calc_dairy_lactating():
     milk_fat_percentage                    = ask_float('Milk fat (%)',                          hint=nz_default['Fat'])
     milk_protein_percentage                = ask_float('Milk protein (%)',                      hint=nz_default['Protein'])
     herd_pregnant_percentage               = ask_float('Percentage of herd pregnant (%)',       hint=nz_default['preg_perc'])
-    diet_digestability_percentage          = ask_float('Diet digestibility DE (%)',             hint=nz_default['DE_NZ_Pasture'])
+    diet_digestibility_percentage          = ask_float('Diet digestibility DE (%)',             hint=nz_default['DE_NZ_Pasture'])
     methane_conversion_factor_percentage   = ask_float('Methane conversion factor Ym (%)',      hint=ipcc_default['Ym'])
 
-    params = DairyLactatingParams(num_animals, reporting_period, body_weight, daily_milk_yield, milk_fat_percentage,
-                                  milk_protein_percentage, herd_pregnant_percentage, diet_digestability_percentage,
-                                  methane_conversion_factor_percentage)
+    params = DairyLactatingParams(num_animals=num_animals, reporting_period=reporting_period, body_weight=body_weight,
+                                  daily_milk_yield=daily_milk_yield, milk_fat_percentage=milk_fat_percentage,
+                                  milk_protein_percentage=milk_protein_percentage,
+                                  herd_pregnant_percentage=herd_pregnant_percentage,
+                                  diet_digestibility_percentage=diet_digestibility_percentage,
+                                  methane_conversion_factor_percentage=methane_conversion_factor_percentage)
     results = calc_dairy_lactating(params)
-    print_recap('Lactating Dairy Cow', num_animals, reporting_period, body_weight, diet_digestability_percentage, methane_conversion_factor_percentage,
+    print_recap('Lactating Dairy Cow', num_animals, reporting_period, body_weight, diet_digestibility_percentage, methane_conversion_factor_percentage,
                 extras=[f'Milk {daily_milk_yield} kg/day  |  Fat {milk_fat_percentage}%  |  Protein {milk_protein_percentage}%',
                         f'Pregnant {herd_pregnant_percentage}%'])
     print_results(results)
@@ -235,7 +238,7 @@ def calc_dairy_lactating(params: DairyLactatingParams) -> EmissionResults:
     Fat = params.milk_fat_percentage
     Protein = params.milk_protein_percentage
     preg_perc = params.herd_pregnant_percentage
-    DE = params.diet_digestability_percentage
+    DE = params.diet_digestibility_percentage
     Ym = params.methane_conversion_factor_percentage
 
     # -- Tier 1 ---------------------------------------------------------------
@@ -451,18 +454,31 @@ def calc_dairy_heifer(N: int, D: int, BW: float, MW: float, WG: float, DE: float
 # =============================================================================
 # BEEF — BREEDING COW
 # =============================================================================
+class BeefBreedingCowParams(AbstractCommonParams):
+    body_weight: float = Field(nz_default['BW_Beef_Cow'], gt=0.0)
+    herd_pregnant_percentage: float = Field(default=80, ge=0, le=100.0)
+
 def ask_and_calc_beef_breeding_cow():
     print('\n  -- Inputs: Beef Breeding Cow --')
-    N         = ask_int  ('Number of animals')
-    D         = ask_int  ('Reporting period (days)',              hint=365)
-    BW        = ask_float('Body weight (kg)',                     hint=nz_default['BW_Beef_Cow'])
-    preg_perc = ask_float('Percentage of herd pregnant (%)',      hint=80)
-    DE        = ask_float('Diet digestibility DE (%)',            hint=nz_default['DE_NZ_Pasture'])
-    Ym        = ask_float('Methane conversion factor Ym (%)',     hint=ipcc_default['Ym'])
-    calc_beef_breeding_cow(N, D, BW, preg_perc, DE, Ym)
+    num_animals                             = ask_int('Number of animals')
+    reporting_period                        = ask_int('Reporting period (days)',            hint=365)
+    body_weight                             = ask_float('Body weight (kg)',                 hint=nz_default['BW_Beef_Cow'])
+    herd_pregnant_percentage                = ask_float('Percentage of herd pregnant (%)',  hint=80)
+    diet_digestibility_percentage           = ask_float('Diet digestibility DE (%)',        hint=nz_default['DE_NZ_Pasture'])
+    methane_conversion_factor_percentage    = ask_float('Methane conversion factor Ym (%)', hint=ipcc_default['Ym'])
+
+    input_params = BeefBreedingCowParams(num_animals=num_animals, reporting_period=reporting_period,
+                                         body_weight=body_weight, herd_pregnant_percentage=herd_pregnant_percentage,
+                                         diet_digestibility_percentage=diet_digestibility_percentage,
+                                         methane_conversion_factor_percentage=methane_conversion_factor_percentage)
+    results = calc_beef_breeding_cow(input_params)
+    print_recap('Beef Breeding Cow', num_animals, reporting_period, body_weight, diet_digestibility_percentage,
+                methane_conversion_factor_percentage,
+                extras=[f'Pregnant {herd_pregnant_percentage}%  |  NEl = 0  |  NEg = 0'])
+    print_results(results)
 
 
-def calc_beef_breeding_cow(N: int, D: int, BW: float, preg_perc: float, DE: float, Ym: float):
+def calc_beef_breeding_cow(params: BeefBreedingCowParams) -> EmissionResults:
     """
     IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
     for a mature beef breeding cow.
@@ -470,6 +486,14 @@ def calc_beef_breeding_cow(N: int, D: int, BW: float, preg_perc: float, DE: floa
     NE components: NEm + NEa + NEp  (NEl = NEg = 0)
     Cf = 0.322, C = 0.8
     """
+
+    N = params.num_animals
+    D = params.reporting_period
+    BW = params.body_weight
+    preg_perc = params.herd_pregnant_percentage
+    DE = params.diet_digestibility_percentage
+    Ym = params.methane_conversion_factor_percentage
+
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Other']
     CH4_T1 = N * (D / 365) * EF_T1
@@ -512,15 +536,13 @@ def calc_beef_breeding_cow(N: int, D: int, BW: float, preg_perc: float, DE: floa
     EF_MPI  = GE_MPI * (Ym_NZ / 100) * D / 55.65
     CH4_MPI = N * EF_MPI
 
-    # -- Output ---------------------------------------------------------------
-    print_recap('Beef Breeding Cow', N, D, BW, DE, Ym,
-                extras=[f'Pregnant {preg_perc}%  |  NEl = 0  |  NEg = 0'])
-    print_tier('Tier 1',              EF_T1,  CH4_T1)
-    print_tier('Tier 2 Simplified',   EF_T2S, CH4_T2S, GE=GE_T2S, DMI=DMI_T2S)
-    print_tier('Tier 2 Advanced',     EF_T2A, CH4_T2A, GE=GE_T2A, DMI=DMI_T2A)
-    print(f'       NEm={NEm:.1f}  NEa={NEa:.1f}  NEp={NEp:.1f} MJ/day')
-    print_tier('MPI Method  ', EF_MPI, CH4_MPI, GE=GE_MPI, DMI=DMI_MPI)
-    print(f'       ME maint={ME_maint:.1f}  ME preg={ME_preg:.1f} MJ/day')
+    t1 = ResultTier(EF_T1, CH4_T1)
+    t2s = ResultTier(EF_T2S, CH4_T2S, GE_T2S, DMI_T2S)
+    t2a = ResultTier(EF_T2A, CH4_T2A, GE_T2A, DMI_T2A)
+    mpi = ResultTier(EF_MPI, CH4_MPI, GE_MPI, DMI_MPI)
+
+    return EmissionResults(tier_1=t1, tier_2_simplified=t2s, tier_2_advanced=t2a, mpi_method=mpi, NEm=NEm, NEa=NEa,
+                           NEl=NEl, NEp=NEp, ME_maint=ME_maint, ME_preg=ME_preg)
 
 
 # =============================================================================
