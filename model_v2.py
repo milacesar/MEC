@@ -135,15 +135,7 @@ def print_recap(label, N, D, BW, DE, Ym, extras=None):
 # DAIRY — LACTATING COW
 # =============================================================================
 
-def calc_dairy_lactating():
-    """
-    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
-    for a lactating dairy cow.
-
-    NE components: NEm + NEa + NEl + NEp
-    Cf = 0.386 (IPCC 2006 Table 10.4 — lactating)
-    C  = 0.8   (female)
-    """
+def ask_and_calc_dairy_lactating():
     print('\n  -- Inputs: Lactating Dairy Cow --')
     N         = ask_int  ('Number of animals')
     D         = ask_int  ('Reporting period (days)',                          hint=365)
@@ -154,6 +146,18 @@ def calc_dairy_lactating():
     preg_perc = ask_float('Percentage of herd pregnant (%)',                  hint=nz_default['preg_perc'])
     DE        = ask_float('Diet digestibility DE (%)',                        hint=nz_default['DE_NZ_Pasture'])
     Ym        = ask_float('Methane conversion factor Ym (%)',                 hint=ipcc_default['Ym'])
+    calc_dairy_lactating(N, D, BW, Milk, Fat, Protein, preg_perc, DE, Ym)
+
+
+def calc_dairy_lactating(N: int, D: int, BW: float, Milk: float, Fat: float, Protein: float, preg_perc: float, DE: float, Ym: float):
+    """
+    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
+    for a lactating dairy cow.
+
+    NE components: NEm + NEa + NEl + NEp
+    Cf = 0.386 (IPCC 2006 Table 10.4 — lactating)
+    C  = 0.8   (female)
+    """
 
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Dairy']
@@ -218,8 +222,17 @@ def calc_dairy_lactating():
 # =============================================================================
 # DAIRY — DRY COW
 # =============================================================================
+def ask_and_calc_dairy_dry():
+    print('\n  -- Inputs: Dry / Non-Lactating Dairy Cow --')
+    N         = ask_int  ('Number of animals')
+    D         = ask_int  ('Reporting period (days)',              hint=365)
+    BW        = ask_float('Body weight (kg)',                     hint=nz_default['BW_Dairy_Cow'])
+    preg_perc = ask_float('Percentage of herd pregnant (%)',      hint=60)
+    DE        = ask_float('Diet digestibility DE (%)',            hint=nz_default['DE_NZ_Pasture'])
+    Ym        = ask_float('Methane conversion factor Ym (%)',     hint=ipcc_default['Ym'])
+    calc_dairy_dry(N, D, BW, preg_perc, DE, Ym)
 
-def calc_dairy_dry():
+def calc_dairy_dry(N: int, D: int, BW: float, preg_perc: float, DE: float, Ym: float):
     """
     IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
     for a dry / non-lactating dairy cow.
@@ -228,14 +241,6 @@ def calc_dairy_dry():
     Cf = 0.322 (IPCC Table 10.4 — non-lactating)
     C  = 0.8
     """
-    print('\n  -- Inputs: Dry / Non-Lactating Dairy Cow --')
-    N         = ask_int  ('Number of animals')
-    D         = ask_int  ('Reporting period (days)',              hint=365)
-    BW        = ask_float('Body weight (kg)',                     hint=nz_default['BW_Dairy_Cow'])
-    preg_perc = ask_float('Percentage of herd pregnant (%)',      hint=60)
-    DE        = ask_float('Diet digestibility DE (%)',            hint=nz_default['DE_NZ_Pasture'])
-    Ym        = ask_float('Methane conversion factor Ym (%)',     hint=ipcc_default['Ym'])
-
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Dairy']
     CH4_T1 = N * (D / 365) * EF_T1
@@ -294,14 +299,7 @@ def calc_dairy_dry():
 # DAIRY — REPLACEMENT HEIFER
 # =============================================================================
 
-def calc_dairy_heifer():
-    """
-    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
-    for a dairy replacement heifer.
-
-    NE components: NEm + NEa + NEg  (NEl = NEp = 0)
-    Cf = 0.322, C = 0.8
-    """
+def ask_and_calc_dairy_heifer():
     print('\n  -- Inputs: Dairy Replacement Heifer --')
     N   = ask_int  ('Number of animals')
     D   = ask_int  ('Reporting period (days)',              hint=365)
@@ -310,7 +308,17 @@ def calc_dairy_heifer():
     WG  = ask_float('Daily weight gain (kg/day)',           hint=nz_default['WG_Heifer'])
     DE  = ask_float('Diet digestibility DE (%)',            hint=nz_default['DE_NZ_Pasture'])
     Ym  = ask_float('Methane conversion factor Ym (%)',     hint=ipcc_default['Ym'])
+    calc_dairy_heifer(N, D, BW, MW, WG, DE, Ym)
 
+
+def calc_dairy_heifer(N: int, D: int, BW: float, MW: float, WG: float, DE: float, Ym: float):
+    """
+    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
+    for a dairy replacement heifer.
+
+    NE components: NEm + NEa + NEg  (NEl = NEp = 0)
+    Cf = 0.322, C = 0.8
+    """
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Other']   # not yet a dairy cow
     CH4_T1 = N * (D / 365) * EF_T1
@@ -367,15 +375,7 @@ def calc_dairy_heifer():
 # =============================================================================
 # BEEF — BREEDING COW
 # =============================================================================
-
-def calc_beef_breeding_cow():
-    """
-    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
-    for a mature beef breeding cow.
-
-    NE components: NEm + NEa + NEp  (NEl = NEg = 0)
-    Cf = 0.322, C = 0.8
-    """
+def ask_and_calc_beef_breeding_cow():
     print('\n  -- Inputs: Beef Breeding Cow --')
     N         = ask_int  ('Number of animals')
     D         = ask_int  ('Reporting period (days)',              hint=365)
@@ -383,7 +383,17 @@ def calc_beef_breeding_cow():
     preg_perc = ask_float('Percentage of herd pregnant (%)',      hint=80)
     DE        = ask_float('Diet digestibility DE (%)',            hint=nz_default['DE_NZ_Pasture'])
     Ym        = ask_float('Methane conversion factor Ym (%)',     hint=ipcc_default['Ym'])
+    calc_beef_breeding_cow(N, D, BW, preg_perc, DE, Ym)
 
+
+def calc_beef_breeding_cow(N: int, D: int, BW: float, preg_perc: float, DE: float, Ym: float):
+    """
+    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
+    for a mature beef breeding cow.
+
+    NE components: NEm + NEa + NEp  (NEl = NEg = 0)
+    Cf = 0.322, C = 0.8
+    """
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Other']
     CH4_T1 = N * (D / 365) * EF_T1
@@ -440,8 +450,30 @@ def calc_beef_breeding_cow():
 # =============================================================================
 # BEEF — GROWING / FINISHING
 # =============================================================================
+def ask_and_calc_beef_growing():
+    print('\n  -- Inputs: Growing / Finishing Cattle --')
+    N   = ask_int  ('Number of animals')
+    D   = ask_int  ('Reporting period (days)',                   hint=365)
+    BW  = ask_float('Current body weight (kg)',                  hint=nz_default['BW_Steer'])
+    MW  = ask_float('Mature body weight (kg)',                   hint=nz_default['BW_Beef_Cow'])
+    WG  = ask_float('Daily weight gain (kg/day)',                hint=nz_default['WG_Growing'])
+    DE  = ask_float('Diet digestibility DE (%)',                 hint=nz_default['DE_NZ_Pasture'])
+    Ym  = ask_float('Methane conversion factor Ym (%)',          hint=ipcc_default['Ym'])
 
-def calc_beef_growing():
+    SEX_MENU = {
+        '1': {'label': 'Female (heifer)',   'note': 'C = 0.8  — IPCC Eq. 10.6'},
+        '2': {'label': 'Castrate (steer)',  'note': 'C = 1.0  — IPCC Eq. 10.6'},
+        '3': {'label': 'Intact male',       'note': 'C = 1.2  — IPCC Eq. 10.6'},
+    }
+    sex_key = choose_menu('Sex of animals (affects C in NEg):', SEX_MENU)
+    C_values    = {'1': 0.8, '2': 1.0, '3': 1.2}
+    sex_labels  = {'1': 'Female (heifer)', '2': 'Castrate (steer)', '3': 'Intact male'}
+    C           = C_values[sex_key]
+    sex_label   = sex_labels[sex_key]
+    calc_beef_growing(N, D, BW, MW, WG, DE, Ym, C)
+
+
+def calc_beef_growing(N: int, D: int, BW: float, MW: float, WG: float, DE: float, Ym: float, C: float):
     """
     IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
     for growing or finishing beef cattle (heifers, young bulls, or mixed sex).
@@ -461,29 +493,9 @@ def calc_beef_growing():
     NEl = NEp = 0.
     
     """
-    print('\n  -- Inputs: Growing / Finishing Cattle --')
-    N   = ask_int  ('Number of animals')
-    D   = ask_int  ('Reporting period (days)',                   hint=365)
-    BW  = ask_float('Current body weight (kg)',                  hint=nz_default['BW_Steer'])
-    MW  = ask_float('Mature body weight (kg)',                   hint=nz_default['BW_Beef_Cow'])
-    WG  = ask_float('Daily weight gain (kg/day)',                hint=nz_default['WG_Growing'])
-    DE  = ask_float('Diet digestibility DE (%)',                 hint=nz_default['DE_NZ_Pasture'])
-    Ym  = ask_float('Methane conversion factor Ym (%)',          hint=ipcc_default['Ym'])
-
     # -- Sex selection — sets C (maturity coefficient) ----------------------
     # C affects NEg directly: higher C → lower NEg for the same BW and gain.
     # IPCC 2006 Eq. 10.6 and Table 10.3.
-    SEX_MENU = {
-        '1': {'label': 'Female (heifer)',   'note': 'C = 0.8  — IPCC Eq. 10.6'},
-        '2': {'label': 'Castrate (steer)',  'note': 'C = 1.0  — IPCC Eq. 10.6'},
-        '3': {'label': 'Intact male',       'note': 'C = 1.2  — IPCC Eq. 10.6'},
-    }
-    sex_key = choose_menu('Sex of animals (affects C in NEg):', SEX_MENU)
-    C_values    = {'1': 0.8, '2': 1.0, '3': 1.2}
-    sex_labels  = {'1': 'Female (heifer)', '2': 'Castrate (steer)', '3': 'Intact male'}
-    C           = C_values[sex_key]
-    sex_label   = sex_labels[sex_key]
-    
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Other']
     CH4_T1 = N * (D / 365) * EF_T1
@@ -540,8 +552,17 @@ def calc_beef_growing():
 # =============================================================================
 # BEEF — BULL
 # =============================================================================
+def ask_and_calc_beef_bull():
+    print('\n  -- Inputs: Bull (Breeding) --')
+    N   = ask_int  ('Number of animals')
+    D   = ask_int  ('Reporting period (days)',              hint=365)
+    BW  = ask_float('Body weight (kg)',                     hint=nz_default['BW_Bull'])
+    DE  = ask_float('Diet digestibility DE (%)',            hint=nz_default['DE_NZ_Pasture'])
+    Ym  = ask_float('Methane conversion factor Ym (%)',     hint=ipcc_default['Ym'])
+    calc_beef_bull(N, D, BW, DE, Ym)
 
-def calc_beef_bull():
+
+def calc_beef_bull(N: int, D: int, BW: float, DE: float, Ym: float):
     """
     IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
     for a breeding bull.
@@ -550,13 +571,6 @@ def calc_beef_bull():
     Cf = 0.370  (IPCC Table 10.4 — bull)
     C  = 1.2    (IPCC Eq. 10.6  — bull)
     """
-    print('\n  -- Inputs: Bull (Breeding) --')
-    N   = ask_int  ('Number of animals')
-    D   = ask_int  ('Reporting period (days)',              hint=365)
-    BW  = ask_float('Body weight (kg)',                     hint=nz_default['BW_Bull'])
-    DE  = ask_float('Diet digestibility DE (%)',            hint=nz_default['DE_NZ_Pasture'])
-    Ym  = ask_float('Methane conversion factor Ym (%)',     hint=ipcc_default['Ym'])
-
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Other']
     CH4_T1 = N * (D / 365) * EF_T1
@@ -608,14 +622,7 @@ def calc_beef_bull():
 # BEEF — STEER
 # =============================================================================
 
-def calc_beef_steer():
-    """
-    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
-    for a growing steer (castrated male).
-
-    NE components: NEm + NEa + NEg  (NEl = NEp = 0)
-    Cf = 0.322, C = 1.0  (castrate — IPCC Eq. 10.6)
-    """
+def ask_and_calc_beef_steer():
     print('\n  -- Inputs: Steer (Castrate, Growing) --')
     N   = ask_int  ('Number of animals')
     D   = ask_int  ('Reporting period (days)',                   hint=365)
@@ -624,7 +631,17 @@ def calc_beef_steer():
     WG  = ask_float('Daily weight gain (kg/day)',                hint=nz_default['WG_Growing'])
     DE  = ask_float('Diet digestibility DE (%)',                 hint=nz_default['DE_NZ_Pasture'])
     Ym  = ask_float('Methane conversion factor Ym (%)',          hint=ipcc_default['Ym'])
+    calc_beef_steer(N, D, BW, MW, WG, DE, Ym)
 
+
+def calc_beef_steer(N: int, D: int, BW: float, MW: float, WG: float, DE: float, Ym: float):
+    """
+    IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
+    for a growing steer (castrated male).
+
+    NE components: NEm + NEa + NEg  (NEl = NEp = 0)
+    Cf = 0.322, C = 1.0  (castrate — IPCC Eq. 10.6)
+    """
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Other']
     CH4_T1 = N * (D / 365) * EF_T1
@@ -691,13 +708,13 @@ BEEF_MENU  = {k: {'label': v['label'], 'note': v['note']} for k, v in BEEF_SUBCA
 
 # Maps (species_key, subcat_key) → calc function
 DISPATCH = {
-    ('1', '1'): calc_dairy_lactating,
-    ('1', '2'): calc_dairy_dry,
-    ('1', '3'): calc_dairy_heifer,
-    ('2', '1'): calc_beef_breeding_cow,
-    ('2', '2'): calc_beef_growing,
-    ('2', '3'): calc_beef_bull,
-    ('2', '4'): calc_beef_steer,
+    ('1', '1'): ask_and_calc_dairy_lactating,
+    ('1', '2'): ask_and_calc_dairy_dry,
+    ('1', '3'): ask_and_calc_dairy_heifer,
+    ('2', '1'): ask_and_calc_beef_breeding_cow,
+    ('2', '2'): ask_and_calc_beef_growing,
+    ('2', '3'): ask_and_calc_beef_bull,
+    ('2', '4'): ask_and_calc_beef_steer,
 }
 
 
