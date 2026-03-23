@@ -19,6 +19,7 @@ References:
   - MPI Methodology 2025 / NZ Farm Emissions Method 2024
 """
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import datetime
 from typing import NamedTuple
@@ -174,20 +175,25 @@ def print_recap(label, N, D, BW, DE, Ym, extras=None):
     print()
 
 
+class AbstractCommonParams(BaseModel, ABC):
+    """An Abstract class representing the common parameters between all input params, reducing code duplication."""
+    num_animals: int = Field(ge=0)
+    reporting_period: int = Field(365, gt=0)
+    diet_digestability_percentage: float = Field(nz_default['DE_NZ_Pasture'], gt=0, le=100.0)
+    methane_conversion_factor_percentage: float = Field(ipcc_default['Ym'], ge=0, le=100.0)
+
 # =============================================================================
 # DAIRY — LACTATING COW
 # =============================================================================
-class DairyLactatingParams(BaseModel):
+
+
+class DairyLactatingParams(AbstractCommonParams):
     """Input parameters for calcuating emissions of lactating dairy cows"""
-    num_animals: int = Field(ge=0)
-    reporting_period: int = Field(365, gt=0)
     body_weight: float = Field(nz_default['BW_Dairy_Cow'], gt=0.0)
     daily_milk_yield: float = Field(nz_default['Milk'], ge=0)
     milk_fat_percentage: float = Field(nz_default['Fat'], gt=0, le=100.0)
     milk_protein_percentage: float = Field(nz_default['Protein'], ge=0, le=100.0)
     herd_pregnant_percentage: float = Field(nz_default['preg_perc'], ge=0, le=100.0)
-    diet_digestability_percentage: float = Field(nz_default['DE_NZ_Pasture'], gt=0, le=100.0)
-    methane_conversion_factor_percentage: float = Field(ipcc_default['Ym'], ge=0, le=100.0)
 
 
 def ask_and_calc_dairy_lactating():
