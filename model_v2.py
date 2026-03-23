@@ -19,7 +19,12 @@ References:
   - MPI Methodology 2025 / NZ Farm Emissions Method 2024
 """
 
+from dataclasses import dataclass
 import datetime
+from typing import NamedTuple
+
+from pydantic import BaseModel, Field
+
 from defaults_v2 import ipcc_default, nz_default, DAIRY_SUBCATS, BEEF_SUBCATS
 
 
@@ -111,6 +116,30 @@ def rem_reg(DE):
     return REM, REG
 
 
+@dataclass
+class ResultTier:
+    """Container to hold data for an emission result tier."""
+    EF: float
+    CH4_kg: float
+    GE: float | None = None
+    DMI: float | None = None
+
+
+class EmissionResults(BaseModel):
+    """Container to hold all emission results for a calculation"""
+    tier_1: ResultTier
+    tier_2_simplified: ResultTier
+    tier_2_advanced: ResultTier
+    mpi_method: ResultTier
+    NEm: float
+    NEa: float
+    NEl: float
+    NEp: float
+    ME_maint: float
+    ME_lact: float
+    ME_preg: float
+
+
 def print_tier(name, EF, CH4_kg, GE=None, DMI=None):
     """Print one tier's results in a consistent format."""
     print(f'\n  --- {name} ---')
@@ -118,6 +147,20 @@ def print_tier(name, EF, CH4_kg, GE=None, DMI=None):
     if DMI is not None: print(f'  DMI             : {DMI:.2f} kg DM/head/day')
     print(f'  Emission Factor : {EF:.2f} kg CH4/head/year')
     print(f'  Total Emissions : {CH4_kg:,.1f} kg CH4/year')
+
+
+def print_results(results: EmissionResults):
+    """Print all tiers' results for a calculation"""
+    t1 = results.tier_1
+    print_tier('Tier 1', t1.EF, t1.CH4_kg)
+    t2s = results.tier_2_simplified
+    print_tier('Tier 2 Simplified', t2s.EF, t2s.CH4_kg, GE=t2s.GE, DMI=t2s.DMI)
+    t2a = results.tier_2_advanced
+    print_tier('Tier 2 Advanced', t2a.EF, t2a.CH4_kg, GE=t2a.GE, DMI=t2a.DMI)
+    print(f'       NEm={results.NEm:.1f}  NEa={results.NEa:.1f}  NEl={results.NEl:.1f}  NEp={results.NEp:.1f} MJ/day')
+    mpi = results.mpi_method
+    print_tier('MPI Method  ', mpi.EF, mpi.CH4, GE=mpi.GE, DMI=mpi.DMI)
+    print(f'       ME maint={results.ME_maint:.1f}  ME lact={results.ME_lact:.1f}  ME preg={results.ME_preg:.1f} MJ/day')
 
 
 def print_recap(label, N, D, BW, DE, Ym, extras=None):
@@ -134,22 +177,43 @@ def print_recap(label, N, D, BW, DE, Ym, extras=None):
 # =============================================================================
 # DAIRY — LACTATING COW
 # =============================================================================
+class DairyLactatingParams(BaseModel):
+    """Input parameters for calcuating emissions of lactating dairy cows"""
+    num_animals: int = Field(ge=0)
+    reporting_period: int = Field(365, gt=0)
+    body_weight: float = Field(nz_default['BW_Dairy_Cow'], gt=0.0)
+    daily_milk_yield: float = Field(nz_default['Milk'], ge=0)
+    milk_fat_percentage: float = Field(nz_default['Fat'], gt=0, le=100.0)
+    milk_protein_percentage: float = Field(nz_default['Protein'], ge=0, le=100.0)
+    herd_pregnant_percentage: float = Field(nz_default['preg_perc'], ge=0, le=100.0)
+    diet_digestability_percentage: float = Field(nz_default['DE_NZ_Pasture'], gt=0, le=100.0)
+    methane_conversion_factor_percentage: float = Field(ipcc_default['Ym'], ge=0, le=100.0)
+
 
 def ask_and_calc_dairy_lactating():
+    """Prompt for CLI input and calculate and print the emission results for lactating dairy cows"""
     print('\n  -- Inputs: Lactating Dairy Cow --')
-    N         = ask_int  ('Number of animals')
-    D         = ask_int  ('Reporting period (days)',                          hint=365)
-    BW        = ask_float('Body weight (kg)',                                 hint=nz_default['BW_Dairy_Cow'])
-    Milk      = ask_float('Daily milk yield (kg/head/day)',                   hint=nz_default['Milk'])
-    Fat       = ask_float('Milk fat (%)',                                     hint=nz_default['Fat'])
-    Protein   = ask_float('Milk protein (%)',                                 hint=nz_default['Protein'])
-    preg_perc = ask_float('Percentage of herd pregnant (%)',                  hint=nz_default['preg_perc'])
-    DE        = ask_float('Diet digestibility DE (%)',                        hint=nz_default['DE_NZ_Pasture'])
-    Ym        = ask_float('Methane conversion factor Ym (%)',                 hint=ipcc_default['Ym'])
-    calc_dairy_lactating(N, D, BW, Milk, Fat, Protein, preg_perc, DE, Ym)
+    num_animals                            = ask_int  ('Number of animals')
+    reporting_period                       = ask_int  ('Reporting period (days)',               hint=365)
+    body_weight                            = ask_float('Body weight (kg)',                      hint=nz_default['BW_Dairy_Cow'])
+    daily_milk_yield                       = ask_float('Daily milk yield (kg/head/day)',        hint=nz_default['Milk'])
+    milk_fat_percentage                    = ask_float('Milk fat (%)',                          hint=nz_default['Fat'])
+    milk_protein_percentage                = ask_float('Milk protein (%)',                      hint=nz_default['Protein'])
+    herd_pregnant_percentage               = ask_float('Percentage of herd pregnant (%)',       hint=nz_default['preg_perc'])
+    diet_digestability_percentage          = ask_float('Diet digestibility DE (%)',             hint=nz_default['DE_NZ_Pasture'])
+    methane_conversion_factor_percentage   = ask_float('Methane conversion factor Ym (%)',      hint=ipcc_default['Ym'])
+
+    params = DairyLactatingParams(num_animals, reporting_period, body_weight, daily_milk_yield, milk_fat_percentage,
+                                  milk_protein_percentage, herd_pregnant_percentage, diet_digestability_percentage,
+                                  methane_conversion_factor_percentage)
+    results = calc_dairy_lactating(params)
+    print_recap('Lactating Dairy Cow', num_animals, reporting_period, body_weight, diet_digestability_percentage, methane_conversion_factor_percentage,
+                extras=[f'Milk {daily_milk_yield} kg/day  |  Fat {milk_fat_percentage}%  |  Protein {milk_protein_percentage}%',
+                        f'Pregnant {herd_pregnant_percentage}%'])
+    print_results(results)
 
 
-def calc_dairy_lactating(N: int, D: int, BW: float, Milk: float, Fat: float, Protein: float, preg_perc: float, DE: float, Ym: float):
+def calc_dairy_lactating(params: DairyLactatingParams) -> EmissionResults:
     """
     IPCC Tier 1, Tier 2S, Tier 2 Advanced, and MPI method
     for a lactating dairy cow.
@@ -158,6 +222,15 @@ def calc_dairy_lactating(N: int, D: int, BW: float, Milk: float, Fat: float, Pro
     Cf = 0.386 (IPCC 2006 Table 10.4 — lactating)
     C  = 0.8   (female)
     """
+    N = params.num_animals
+    D = params.reporting_period
+    BW = params.body_weight
+    Milk = params.daily_milk_yield
+    Fat = params.milk_fat_percentage
+    Protein = params.milk_protein_percentage
+    preg_perc = params.herd_pregnant_percentage
+    DE = params.diet_digestability_percentage
+    Ym = params.methane_conversion_factor_percentage
 
     # -- Tier 1 ---------------------------------------------------------------
     EF_T1  = ipcc_default['EF_T1_Dairy']
@@ -207,16 +280,13 @@ def calc_dairy_lactating(N: int, D: int, BW: float, Milk: float, Fat: float, Pro
     EF_MPI  = GE_MPI * (Ym_NZ / 100) * D / 55.65
     CH4_MPI = N * EF_MPI
 
-    # -- Output ---------------------------------------------------------------
-    print_recap('Lactating Dairy Cow', N, D, BW, DE, Ym,
-                extras=[f'Milk {Milk} kg/day  |  Fat {Fat}%  |  Protein {Protein}%',
-                        f'Pregnant {preg_perc}%'])
-    print_tier('Tier 1',              EF_T1,  CH4_T1)
-    print_tier('Tier 2 Simplified',   EF_T2S, CH4_T2S, GE=GE_T2S, DMI=DMI_T2S)
-    print_tier('Tier 2 Advanced',     EF_T2A, CH4_T2A, GE=GE_T2A, DMI=DMI_T2A)
-    print(f'       NEm={NEm:.1f}  NEa={NEa:.1f}  NEl={NEl:.1f}  NEp={NEp:.1f} MJ/day')
-    print_tier('MPI Method  ', EF_MPI, CH4_MPI, GE=GE_MPI, DMI=DMI_MPI)
-    print(f'       ME maint={ME_maint:.1f}  ME lact={ME_lact:.1f}  ME preg={ME_preg:.1f} MJ/day')
+    t1 = ResultTier(EF_T1, CH4_T1)
+    t2s = ResultTier(EF_T2S, CH4_T2S, GE_T2S, DMI_T2S)
+    t2a = ResultTier(EF_T2A, CH4_T2A, GE_T2A, DMI_T2A)
+    mpi = ResultTier(EF_MPI, CH4_MPI, GE_MPI, DMI_MPI)
+
+    return EmissionResults(tier_1=t1, tier_2_simplified=t2s, tier_2_advanced=t2a, mpi_method=mpi, NEm=NEm, NEa=NEa,
+                           NEl=NEl, NEp=NEp, ME_maint=ME_maint, ME_lact=ME_lact, ME_preg=ME_preg)
 
 
 # =============================================================================
