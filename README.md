@@ -26,6 +26,29 @@ Currently only Cattle (Dairy and Other) is supported. Eventually Sheep, Deer may
 
 - defaults_v2.py : contains (1) IPCC defaults, (2) MPI defaults, and (3) NZ defaults. (1) and (2) should only be modified if official changes have been made to the relevant documentations.
 - model_v2.py : contains all equations and printing outputs.
+- api.py : contains HTTP endpoints for a REST API access to the calculations
 
 ### Running
+
+1. Install dependencies 
+```bash
+python -m venv venv
+
+source venv/bin/activate # Linux
+# or
+venv\Scripts\activate # Windows
+
+pip install -r requirements.txt
+```
+
+2. Run CLI prompt mode
+```bash
 python model_v2.py
+```
+
+### Run API Dev Server
+Install dependencies as above then:
+
+```bash
+fastapi dev api:app
+```
